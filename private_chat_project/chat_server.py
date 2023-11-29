@@ -10,7 +10,10 @@ async def handle_connection(websocket, path):
 
     # Notify all connected clients about the new user
     for client in connected_users.values():
-        await client.send(f"User {user_id} joined the chat!")
+        if client == websocket:
+            await client.send(f'Thanks  {user_id} for joining . Have a nice day!!')
+        else:
+            await client.send(f"User {user_id} joined the chat!. To chat use @username and send message")
 
     try:
         # Handle incoming messages
@@ -37,7 +40,6 @@ async def handle_connection(websocket, path):
 
 
 async def register_user(websocket):
-    await websocket.send("Welcome to the chat! Please enter your username:")
     user_id = await websocket.recv()
     return user_id
 
