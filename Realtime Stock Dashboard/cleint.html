@@ -9,7 +9,7 @@
     <h1>Stock Price Dashboard</h1>
 
     <label for="symbolInput">Enter Stock Symbol:</label>
-    <input type="text" id="symbolInput">
+    <input type="text" id="symbolInput" placeholder="ABC">
     <button onclick="submitSymbol()">Submit</button><br>
 
     <label for="watchlistLabel">Watchlist:</label>
@@ -53,8 +53,17 @@
         });
 
         function submitSymbol() {
-            const symbol = document.getElementById('symbolInput').value;
+            const symbolInput = document.getElementById('symbolInput');
+            const symbol = symbolInput.value;
             const payload = JSON.stringify({ symbol: symbol });
+
+            // Clear the input field
+            symbolInput.value = '';
+
+            // Focus on the input field for the next input
+            symbolInput.focus();
+
+            // Send the payload to the server
             socket.send(payload);
         }
    </script>

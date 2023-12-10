@@ -22,20 +22,31 @@ company_with_client_mapping = dict()
 
 async def push_updates(websocket, path):
     await register_client(websocket)
-    payload = await websocket.recv()
-    request_data = json.loads(payload)
-    await construct_company_with_symbols_mapping(request_data, websocket)
-    while True:
-        for company in company_with_client_mapping:
-            stock_price = get_stock_price(company)
-            message = json.dumps({"symbol": company, "price": stock_price})
-            clients = company_with_client_mapping[company]
-            for client in clients:
-                try:
-                    await client.send(message)
-                except websockets.exceptions:
-                    await unregister_client(client)
-        await asyncio.sleep(10)
+
+    async def receive_messages():
+        while True:
+            payload = await websocket.recv()
+            request_data = json.loads(payload)
+            await construct_company_with_symbols_mapping(request_data, websocket)
+
+    async def send_updates():
+        while True:
+            for company in company_with_client_mapping:
+                # stock_price = get_stock_price(company)
+                stock_price = 150
+                message = json.dumps({"symbol": company, "price": stock_price})
+                clients = company_with_client_mapping[company]
+                disconnected_clients = set()
+                for client in clients:
+                    try:
+                        await client.send(message)
+                    except websockets.exceptions.ConnectionClosedOK:
+                        disconnected_clients.add(client)
+                for disconnected_client in disconnected_clients:
+                    await unregister_client(disconnected_client)
+            await asyncio.sleep(25)
+
+    await asyncio.gather(receive_messages(), send_updates())
 
 
 async def construct_company_with_symbols_mapping(request_data, websocket):
