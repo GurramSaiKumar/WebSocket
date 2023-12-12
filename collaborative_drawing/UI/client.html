@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collaborative Drawing App</title>
+    <style>
+        #canvas {
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <h1>Collaborative Drawing App</h1>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+
+        let drawing = false;
+
+        // Establish a WebSocket connection
+        const socket = new WebSocket("ws://localhost:8765");
+
+        // Event listener for mouse down
+        canvas.addEventListener('mousedown', () => {
+            drawing = true;
+        });
+
+        // Event listener for mouse up
+        canvas.addEventListener('mouseup', () => {
+            drawing = false;
+            context.beginPath();
+        });
+
+        // Event listener for mouse move
+        canvas.addEventListener('mousemove', draw);
+
+        function draw(e) {
+            if (!drawing) return;
+
+            context.lineWidth = 10;  // Set the line width to 10 (or any desired thickness)
+            context.lineCap = 'round';
+            context.strokeStyle = 'black';
+
+            // Draw a line from the previous point to the current point
+            context.lineTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+            context.stroke();
+
+            // Send drawing data to the server
+            socket.send(JSON.stringify({
+                startX: e.clientX - canvas.offsetLeft,
+                startY: e.clientY - canvas.offsetTop,
+                endX: e.clientX - canvas.offsetLeft,
+                endY: e.clientY - canvas.offsetTop
+            }));
+
+            // Move the starting point to the current point for the next segment
+            context.beginPath();
+            context.moveTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+        }
+
+        // Receive drawing data from the server and draw it
+        socket.addEventListener('message', (event) => {
+            const data = JSON.parse(event.data);
+            context.beginPath();
+            context.moveTo(data.startX, data.startY);
+            context.lineTo(data.endX, data.endY);
+            context.stroke();
+            context.closePath();
+        });
+    </script>
+</body>
+</html>
